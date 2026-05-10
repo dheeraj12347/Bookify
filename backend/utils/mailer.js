@@ -1,34 +1,55 @@
 const nodemailer = require('nodemailer');
 
 const sendOtpEmail = async (email, otp) => {
+  // Fallback for local/dev environments
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     console.log(`OTP for ${email}: ${otp}`);
     return;
   }
 
+  // Gmail transporter
   const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: Number(process.env.EMAIL_PORT || 587),
-    secure: false,
+    service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS
     }
   });
 
+  // Verify transporter connection
+  await transporter.verify();
+
+  // Send OTP mail
   await transporter.sendMail({
     from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
     to: email,
     subject: 'Your Service Booking OTP',
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 520px; margin: auto;">
-        <h2>Verify your account</h2>
-        <p>Your OTP is:</p>
-        <h1 style="letter-spacing: 6px;">${otp}</h1>
-        <p>This OTP expires in 10 minutes.</p>
+      <div style="font-family: Arial, sans-serif; max-width: 520px; margin: auto; padding: 20px;">
+        <h2 style="color: #2563eb;">Verify your account</h2>
+
+        <p>Your OTP for Bookify account verification is:</p>
+
+        <div style="
+          font-size: 32px;
+          font-weight: bold;
+          letter-spacing: 8px;
+          color: #111827;
+          margin: 20px 0;
+        ">
+          ${otp}
+        </div>
+
+        <p>This OTP expires in <strong>10 minutes</strong>.</p>
+
+        <p style="margin-top: 24px; color: #6b7280;">
+          If you did not request this, please ignore this email.
+        </p>
       </div>
     `
   });
+
+  console.log(`OTP email sent successfully to ${email}`);
 };
 
 module.exports = { sendOtpEmail };

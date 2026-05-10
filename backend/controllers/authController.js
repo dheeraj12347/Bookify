@@ -49,21 +49,19 @@ const customerSignup = async (req, res, next) => {
       [email, otp, expiresAt]
     );
 
-    // TEMPORARY FIX FOR DEPLOYMENT
-    // Bypass email sending and return OTP directly
-    console.log('Generated OTP:', otp);
+    // Send OTP email
+    await sendOtpEmail(email, otp);
 
     res.status(201).json({
-      message: 'Signup successful',
-      devOtp: otp
+      message: 'Signup successful. Please verify OTP sent to your email.'
     });
 
   } catch (error) {
-    console.log(error);
+    console.log('Customer Signup Error:', error);
 
     res.status(500).json({
-      message: error.message,
-      error
+      message: error.message || 'Internal server error',
+      error: error.toString()
     });
   }
 };
@@ -102,11 +100,11 @@ const verifyCustomerOtp = async (req, res, next) => {
     res.json({ message: 'OTP verified. You can login now.' });
 
   } catch (error) {
-    console.log(error);
+    console.log('OTP Verification Error:', error);
 
     res.status(500).json({
-      message: error.message,
-      error
+      message: error.message || 'Internal server error',
+      error: error.toString()
     });
   }
 };
@@ -151,11 +149,11 @@ const customerLogin = async (req, res, next) => {
     });
 
   } catch (error) {
-    console.log(error);
+    console.log('Customer Login Error:', error);
 
     res.status(500).json({
-      message: error.message,
-      error
+      message: error.message || 'Internal server error',
+      error: error.toString()
     });
   }
 };
@@ -215,11 +213,11 @@ const vendorSignup = async (req, res, next) => {
     });
 
   } catch (error) {
-    console.log(error);
+    console.log('Vendor Signup Error:', error);
 
     res.status(500).json({
-      message: error.message,
-      error
+      message: error.message || 'Internal server error',
+      error: error.toString()
     });
   }
 };
@@ -266,11 +264,11 @@ const vendorLogin = async (req, res, next) => {
     });
 
   } catch (error) {
-    console.log(error);
+    console.log('Vendor Login Error:', error);
 
     res.status(500).json({
-      message: error.message,
-      error
+      message: error.message || 'Internal server error',
+      error: error.toString()
     });
   }
 };
