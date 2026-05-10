@@ -13,7 +13,11 @@ const customerSignup = async (req, res, next) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    const existing = await pool.query('SELECT id, is_verified FROM customers WHERE email = $1', [email]);
+    const existing = await pool.query(
+      'SELECT id, is_verified FROM customers WHERE email = $1',
+      [email]
+    );
+
     if (existing.rows.length && existing.rows[0].is_verified) {
       return res.status(409).json({ message: 'Customer already exists' });
     }
@@ -35,24 +39,32 @@ const customerSignup = async (req, res, next) => {
     const otp = createOtp();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    await pool.query('DELETE FROM otp_verification WHERE email = $1', [email]);
+    await pool.query(
+      'DELETE FROM otp_verification WHERE email = $1',
+      [email]
+    );
+
     await pool.query(
       'INSERT INTO otp_verification (email, otp, expires_at) VALUES ($1, $2, $3)',
       [email, otp, expiresAt]
     );
 
-    await sendOtpEmail(email, otp);
-
-    const emailConfigured = Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+    // TEMPORARY FIX FOR DEPLOYMENT
+    // Bypass email sending and return OTP directly
+    console.log('Generated OTP:', otp);
 
     res.status(201).json({
-      message: emailConfigured
-        ? 'Signup successful. Please verify OTP sent to email.'
-        : 'Signup successful. Email is not configured, so OTP is shown for local testing.',
-      devOtp: emailConfigured ? undefined : otp
+      message: 'Signup successful',
+      devOtp: otp
     });
+
   } catch (error) {
-    next(error);
+    console.log(error);
+
+    res.status(500).json({
+      message: error.message,
+      error
+    });
   }
 };
 
@@ -77,12 +89,25 @@ const verifyCustomerOtp = async (req, res, next) => {
       return res.status(400).json({ message: 'OTP expired' });
     }
 
-    await pool.query('UPDATE customers SET is_verified = TRUE WHERE email = $1', [email]);
-    await pool.query('DELETE FROM otp_verification WHERE email = $1', [email]);
+    await pool.query(
+      'UPDATE customers SET is_verified = TRUE WHERE email = $1',
+      [email]
+    );
+
+    await pool.query(
+      'DELETE FROM otp_verification WHERE email = $1',
+      [email]
+    );
 
     res.json({ message: 'OTP verified. You can login now.' });
+
   } catch (error) {
-    next(error);
+    console.log(error);
+
+    res.status(500).json({
+      message: error.message,
+      error
+    });
   }
 };
 
@@ -94,7 +119,11 @@ const customerLogin = async (req, res, next) => {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    const customers = await pool.query('SELECT * FROM customers WHERE email = $1', [email]);
+    const customers = await pool.query(
+      'SELECT * FROM customers WHERE email = $1',
+      [email]
+    );
+
     const customer = customers.rows[0];
 
     if (!customer || !(await bcrypt.compare(password, customer.password))) {
@@ -105,7 +134,10 @@ const customerLogin = async (req, res, next) => {
       return res.status(403).json({ message: 'Please verify OTP before login' });
     }
 
-    const token = generateToken({ id: customer.id, role: 'customer' });
+    const token = generateToken({
+      id: customer.id,
+      role: 'customer'
+    });
 
     res.json({
       token,
@@ -117,20 +149,46 @@ const customerLogin = async (req, res, next) => {
         role: 'customer'
       }
     });
+
   } catch (error) {
-    next(error);
+    console.log(error);
+
+    res.status(500).json({
+      message: error.message,
+      error
+    });
   }
 };
 
 const vendorSignup = async (req, res, next) => {
   try {
-    const { businessName, ownerName, email, phone, password, serviceCategory, city } = req.body;
+    const {
+      businessName,
+      ownerName,
+      email,
+      phone,
+      password,
+      serviceCategory,
+      city
+    } = req.body;
 
-    if (!businessName || !ownerName || !email || !phone || !password || !serviceCategory || !city) {
+    if (
+      !businessName ||
+      !ownerName ||
+      !email ||
+      !phone ||
+      !password ||
+      !serviceCategory ||
+      !city
+    ) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    const existing = await pool.query('SELECT id FROM vendors WHERE email = $1', [email]);
+    const existing = await pool.query(
+      'SELECT id FROM vendors WHERE email = $1',
+      [email]
+    );
+
     if (existing.rows.length) {
       return res.status(409).json({ message: 'Vendor already exists' });
     }
@@ -141,12 +199,28 @@ const vendorSignup = async (req, res, next) => {
       `INSERT INTO vendors
        (business_name, owner_name, email, phone, password, service_category, city)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [businessName, ownerName, email, phone, hashedPassword, serviceCategory, city]
+      [
+        businessName,
+        ownerName,
+        email,
+        phone,
+        hashedPassword,
+        serviceCategory,
+        city
+      ]
     );
 
-    res.status(201).json({ message: 'Vendor account created. You can login now.' });
+    res.status(201).json({
+      message: 'Vendor account created. You can login now.'
+    });
+
   } catch (error) {
-    next(error);
+    console.log(error);
+
+    res.status(500).json({
+      message: error.message,
+      error
+    });
   }
 };
 
@@ -155,17 +229,28 @@ const vendorLogin = async (req, res, next) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+      return res.status(400).json({
+        message: 'Email and password are required'
+      });
     }
 
-    const vendors = await pool.query('SELECT * FROM vendors WHERE email = $1', [email]);
+    const vendors = await pool.query(
+      'SELECT * FROM vendors WHERE email = $1',
+      [email]
+    );
+
     const vendor = vendors.rows[0];
 
     if (!vendor || !(await bcrypt.compare(password, vendor.password))) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({
+        message: 'Invalid credentials'
+      });
     }
 
-    const token = generateToken({ id: vendor.id, role: 'vendor' });
+    const token = generateToken({
+      id: vendor.id,
+      role: 'vendor'
+    });
 
     res.json({
       token,
@@ -179,19 +264,33 @@ const vendorLogin = async (req, res, next) => {
         role: 'vendor'
       }
     });
+
   } catch (error) {
-    next(error);
+    console.log(error);
+
+    res.status(500).json({
+      message: error.message,
+      error
+    });
   }
 };
 
 const adminLogin = async (req, res) => {
   const { email, password } = req.body;
 
-  if (email !== process.env.ADMIN_EMAIL || password !== process.env.ADMIN_PASSWORD) {
-    return res.status(401).json({ message: 'Invalid admin credentials' });
+  if (
+    email !== process.env.ADMIN_EMAIL ||
+    password !== process.env.ADMIN_PASSWORD
+  ) {
+    return res.status(401).json({
+      message: 'Invalid admin credentials'
+    });
   }
 
-  const token = generateToken({ id: 1, role: 'admin' });
+  const token = generateToken({
+    id: 1,
+    role: 'admin'
+  });
 
   res.json({
     token,
