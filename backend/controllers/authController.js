@@ -49,11 +49,12 @@ const customerSignup = async (req, res, next) => {
       [email, otp, expiresAt]
     );
 
-    // Send OTP email
-    await sendOtpEmail(email, otp);
+    // Demo OTP flow for deployed environment
+    console.log('Generated OTP:', otp);
 
     res.status(201).json({
-      message: 'Signup successful. Please verify OTP sent to your email.'
+      message: 'Signup successful',
+      devOtp: otp
     });
 
   } catch (error) {
@@ -306,6 +307,6 @@ module.exports = {
   verifyCustomerOtp,
   customerLogin,
   vendorSignup,
-  vendorLogin,
+ vendorLogin,
   adminLogin
 };
