@@ -13,21 +13,21 @@ const customerSignup = async (req, res, next) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    const [existing] = await pool.query('SELECT id, is_verified FROM customers WHERE email = ?', [email]);
-    if (existing.length && existing[0].is_verified) {
+    const existing = await pool.query('SELECT id, is_verified FROM customers WHERE email = $1', [email]);
+    if (existing.rows.length && existing.rows[0].is_verified) {
       return res.status(409).json({ message: 'Customer already exists' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    if (existing.length) {
+    if (existing.rows.length) {
       await pool.query(
-        'UPDATE customers SET name = ?, phone = ?, password = ?, is_verified = 0 WHERE email = ?',
+        'UPDATE customers SET name = $1, phone = $2, password = $3, is_verified = FALSE WHERE email = $4',
         [name, phone, hashedPassword, email]
       );
     } else {
       await pool.query(
-        'INSERT INTO customers (name, email, phone, password, is_verified) VALUES (?, ?, ?, ?, 0)',
+        'INSERT INTO customers (name, email, phone, password, is_verified) VALUES ($1, $2, $3, $4, FALSE)',
         [name, email, phone, hashedPassword]
       );
     }
@@ -35,9 +35,9 @@ const customerSignup = async (req, res, next) => {
     const otp = createOtp();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    await pool.query('DELETE FROM otp_verification WHERE email = ?', [email]);
+    await pool.query('DELETE FROM otp_verification WHERE email = $1', [email]);
     await pool.query(
-      'INSERT INTO otp_verification (email, otp, expires_at) VALUES (?, ?, ?)',
+      'INSERT INTO otp_verification (email, otp, expires_at) VALUES ($1, $2, $3)',
       [email, otp, expiresAt]
     );
 
@@ -64,21 +64,21 @@ const verifyCustomerOtp = async (req, res, next) => {
       return res.status(400).json({ message: 'Email and OTP are required' });
     }
 
-    const [records] = await pool.query(
-      'SELECT * FROM otp_verification WHERE email = ? AND otp = ?',
+    const records = await pool.query(
+      'SELECT * FROM otp_verification WHERE email = $1 AND otp = $2',
       [email, otp]
     );
 
-    if (!records.length) {
+    if (!records.rows.length) {
       return res.status(400).json({ message: 'Invalid OTP' });
     }
 
-    if (new Date(records[0].expires_at) < new Date()) {
+    if (new Date(records.rows[0].expires_at) < new Date()) {
       return res.status(400).json({ message: 'OTP expired' });
     }
 
-    await pool.query('UPDATE customers SET is_verified = 1 WHERE email = ?', [email]);
-    await pool.query('DELETE FROM otp_verification WHERE email = ?', [email]);
+    await pool.query('UPDATE customers SET is_verified = TRUE WHERE email = $1', [email]);
+    await pool.query('DELETE FROM otp_verification WHERE email = $1', [email]);
 
     res.json({ message: 'OTP verified. You can login now.' });
   } catch (error) {
@@ -94,8 +94,8 @@ const customerLogin = async (req, res, next) => {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    const [customers] = await pool.query('SELECT * FROM customers WHERE email = ?', [email]);
-    const customer = customers[0];
+    const customers = await pool.query('SELECT * FROM customers WHERE email = $1', [email]);
+    const customer = customers.rows[0];
 
     if (!customer || !(await bcrypt.compare(password, customer.password))) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -130,8 +130,8 @@ const vendorSignup = async (req, res, next) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    const [existing] = await pool.query('SELECT id FROM vendors WHERE email = ?', [email]);
-    if (existing.length) {
+    const existing = await pool.query('SELECT id FROM vendors WHERE email = $1', [email]);
+    if (existing.rows.length) {
       return res.status(409).json({ message: 'Vendor already exists' });
     }
 
@@ -140,7 +140,7 @@ const vendorSignup = async (req, res, next) => {
     await pool.query(
       `INSERT INTO vendors
        (business_name, owner_name, email, phone, password, service_category, city)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [businessName, ownerName, email, phone, hashedPassword, serviceCategory, city]
     );
 
@@ -158,8 +158,8 @@ const vendorLogin = async (req, res, next) => {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    const [vendors] = await pool.query('SELECT * FROM vendors WHERE email = ?', [email]);
-    const vendor = vendors[0];
+    const vendors = await pool.query('SELECT * FROM vendors WHERE email = $1', [email]);
+    const vendor = vendors.rows[0];
 
     if (!vendor || !(await bcrypt.compare(password, vendor.password))) {
       return res.status(401).json({ message: 'Invalid credentials' });

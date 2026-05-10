@@ -1,6 +1,3 @@
-CREATE DATABASE IF NOT EXISTS service_booking_db;
-USE service_booking_db;
-
 DROP TABLE IF EXISTS otp_verification;
 DROP TABLE IF EXISTS bookings;
 DROP TABLE IF EXISTS services;
@@ -8,7 +5,7 @@ DROP TABLE IF EXISTS vendors;
 DROP TABLE IF EXISTS customers;
 
 CREATE TABLE customers (
-  id INT AUTO_INCREMENT PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   name VARCHAR(120) NOT NULL,
   email VARCHAR(150) NOT NULL UNIQUE,
   phone VARCHAR(20) NOT NULL,
@@ -18,7 +15,7 @@ CREATE TABLE customers (
 );
 
 CREATE TABLE vendors (
-  id INT AUTO_INCREMENT PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   business_name VARCHAR(150) NOT NULL,
   owner_name VARCHAR(120) NOT NULL,
   email VARCHAR(150) NOT NULL UNIQUE,
@@ -30,11 +27,11 @@ CREATE TABLE vendors (
 );
 
 CREATE TABLE services (
-  id INT AUTO_INCREMENT PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   name VARCHAR(150) NOT NULL,
   category VARCHAR(80) NOT NULL,
   description TEXT NOT NULL,
-  price DECIMAL(10, 2) NOT NULL,
+  price NUMERIC(10, 2) NOT NULL,
   duration VARCHAR(50) NOT NULL,
   image_url VARCHAR(500),
   is_active BOOLEAN DEFAULT TRUE,
@@ -42,26 +39,26 @@ CREATE TABLE services (
 );
 
 CREATE TABLE bookings (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  customer_id INT NOT NULL,
-  vendor_id INT NULL,
-  service_id INT NOT NULL,
-  booking_date DATETIME NOT NULL,
+  id SERIAL PRIMARY KEY,
+  customer_id INTEGER NOT NULL,
+  vendor_id INTEGER NULL,
+  service_id INTEGER NOT NULL,
+  booking_date TIMESTAMP NOT NULL,
   address VARCHAR(255) NOT NULL,
   notes TEXT,
-  total_amount DECIMAL(10, 2) NOT NULL,
-  status ENUM('Pending', 'Accepted', 'Completed', 'Cancelled') DEFAULT 'Pending',
+  total_amount NUMERIC(10, 2) NOT NULL,
+  status VARCHAR(20) DEFAULT 'Pending' CHECK (status IN ('Pending', 'Accepted', 'Completed', 'Cancelled')),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
-  FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE SET NULL,
-  FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+  CONSTRAINT fk_bookings_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
+  CONSTRAINT fk_bookings_vendor FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE SET NULL,
+  CONSTRAINT fk_bookings_service FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
 );
 
 CREATE TABLE otp_verification (
-  id INT AUTO_INCREMENT PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   email VARCHAR(150) NOT NULL,
   otp VARCHAR(10) NOT NULL,
-  expires_at DATETIME NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

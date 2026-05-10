@@ -1,12 +1,12 @@
 # Service Booking Platform
 
-A beginner-friendly full-stack service booking website with customer OTP signup, vendor booking management, JWT authentication, React frontend, Express backend, and MySQL database.
+A beginner-friendly full-stack service booking website with customer OTP signup, vendor booking management, JWT authentication, React frontend, Express backend, and PostgreSQL database.
 
 ## Tech Stack
 
 - Frontend: React.js with Vite, Tailwind CSS, React Router DOM, Axios, React Toastify
 - Backend: Node.js, Express.js
-- Database: MySQL
+- Database: PostgreSQL
 - Auth: JWT, bcrypt
 - OTP: Email OTP using Nodemailer
 
@@ -29,16 +29,16 @@ service-booking-platform/
       pages/
 ```
 
-## MySQL Database Setup
+## PostgreSQL Database Setup
 
-1. Create a MySQL database.
+1. Create a PostgreSQL database locally or on a hosted provider like Aiven.
 2. Open `backend/sql/schema.sql`.
-3. Run the SQL file in MySQL Workbench, phpMyAdmin, or the MySQL CLI.
+3. Run the SQL file in pgAdmin, Aiven query editor, or the `psql` CLI.
 
 Example:
 
 ```bash
-mysql -u root -p < backend/sql/schema.sql
+psql "postgres://username:password@host:5432/database?sslmode=require" -f backend/sql/schema.sql
 ```
 
 The SQL file creates:
@@ -60,16 +60,14 @@ cp .env.example .env
 npm run dev
 ```
 
-Update `.env` with your local MySQL and email settings.
+Update `.env` with your PostgreSQL/Aiven and email settings.
 
 ### Backend Environment Variables
 
 ```env
 PORT=5000
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_mysql_password
-DB_NAME=service_booking_db
+DATABASE_URL=postgres://username:password@host:5432/database?sslmode=require
+DB_SSL=true
 JWT_SECRET=change_this_secret
 JWT_EXPIRES_IN=7d
 EMAIL_HOST=smtp.gmail.com
@@ -193,8 +191,9 @@ Backend:
 
 Database:
 
-- Railway MySQL
-- PlanetScale
+- Aiven PostgreSQL
+- Render PostgreSQL
+- Neon PostgreSQL
 
 ## Deploy Frontend
 
